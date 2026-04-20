@@ -14,16 +14,43 @@ const MoviesList = () => {
   const [searchTitle, setSearchTitle] = useState("");
   const [searchRating, setSearchRating] = useState("");
   const [ratings, setRatings] = useState(["All Ratings"]);
+
+  const [currentPage, setCurrentPage] = useState(0)
+  const [entriesPerPage, setEntriesPerPage] = useState(0)
+  const [currentSearchMode, setCurrentSearchMode] = useState("")
+
   useEffect(() => {
     retrieveMovies();
     retrieveRatings();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [currentSearchMode])
+
+  useEffect(() => {
+    retrieveNextPage()
+  }, [currentPage])
+
+  const retrieveNextPage = () => {
+    if (currentSearchMode === "findByTitle") {
+      findByTitle()
+    } else if (currentSearchMode === "findByRating") {
+      findByRating()
+    } else {
+      retrieveMovies()
+    }
+  }
+
   const retrieveMovies = () => {
-    MovieDataService.getAll()
+    setCurrentSearchMode("")
+    MovieDataService.getAll(currentPage)
       .then((response) => {
         console.log(response.data);
         setMovies(response.data.movies);
+        setCurrentPage(response.data.page)
+        setEntriesPerPage(
+          response.data.entries_per_page)
       })
       .catch((e) => {
         console.log(e);
@@ -52,8 +79,8 @@ const MoviesList = () => {
     setSearchRating(searchRating);
   };
 
-    const find = (query, by) => {
-    MovieDataService.find(query, by)
+  const find = (query, by) => {
+    MovieDataService.find(query, by, currentPage)
       .then(response => {
         console.log(response.data)
         setMovies(response.data.movies)
@@ -62,14 +89,16 @@ const MoviesList = () => {
         console.log(e)
       })
   }
- const findByTitle =
+  const findByTitle =
     () => {
       setSearchRating("")
+      setCurrentSearchMode("findByTitle")
       find(searchTitle, "title")
     }
   const findByRating =
     () => {
       setSearchTitle("")
+      setCurrentSearchMode("findByRating")
       if (searchRating === "All Ratings") {
         retrieveMovies()
       } else {
@@ -140,6 +169,13 @@ const MoviesList = () => {
             )
           })}
         </Row>
+        <br />
+        Showing Page: {currentPage}
+        <Button
+          variant="link"
+          onClick={() => { setCurrentPage(currentPage + 1) }} >
+          Get Next {entriesPerPage} Results
+        </Button>
       </Container>
     </div>
   );
